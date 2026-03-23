@@ -1,0 +1,5 @@
+author_id = "sys"
+app_id = "badges"
+author_name = "System"
+app_name = "Badges"
+lang = "rust"
