@@ -66,6 +66,7 @@ fn draw_items(state: &State) {
     for (i, item) in items.iter().enumerate() {
         let expanded = i == state.cursor;
         let earned = item.done >= item.goal;
+        let show_bar = expanded && item.done != 0 && item.goal != 0;
         if !item.visible {
             continue;
         }
@@ -82,7 +83,11 @@ fn draw_items(state: &State) {
         if expanded && !item.descr.is_empty() {
             box_height += 10;
         }
+        if show_bar {
+            box_height += 10;
+        }
 
+        // Box.
         let size = Size::new(box_width, box_height);
         let point_shadow = Point::new(point.x + 1, point.y + 1);
         draw_rounded_rect(point_shadow, size, corner, Style::solid(color));
@@ -93,19 +98,43 @@ fn draw_items(state: &State) {
         };
         draw_rounded_rect(point, size, corner, style);
 
-        let point_name = Point::new(point.x + 4, point.y + 7);
-        draw_text(&item.name, &font, point_name, color);
+        // Name.
+        let mut point_text = Point::new(point.x + 4, point.y + 7);
+        draw_text(&item.name, &font, point_text, color);
 
+        // XP.
         {
             let text_xp = alloc::format!("{}xp", item.xp);
             let text_w = font.line_width_ascii(&text_xp) as i32;
-            let point_xp = Point::new(WIDTH - MARGIN - 4 - text_w, point_name.y);
+            let point_xp = Point::new(WIDTH - MARGIN - 4 - text_w, point_text.y);
             draw_text(&text_xp, &font, point_xp, theme.secondary);
         }
 
+        // Description.
         if expanded && !item.descr.is_empty() {
-            let point_descr = Point::new(point_name.x, point_name.y + 10);
-            draw_text(&item.descr, &font, point_descr, theme.primary);
+            point_text.y += 10;
+            draw_text(&item.descr, &font, point_text, theme.primary);
+        }
+
+        // Progress bar.
+        if show_bar {
+            let point_bar = Point::new(point_text.x, point_text.y + 4);
+            let bar_width = WIDTH - MARGIN * 2 - 8;
+            {
+                let progress = f32::from(item.done) / f32::from(item.goal);
+                let mut progress = (progress * bar_width as f32) as i32;
+                if earned {
+                    progress = bar_width;
+                } else if progress >= bar_width {
+                    progress -= 2;
+                }
+                if progress > 0 {
+                    let size_bar = Size::new(progress, 8);
+                    draw_rect(point_bar, size_bar, Style::solid(theme.accent));
+                }
+            }
+            let size_bar = Size::new(bar_width, 8);
+            draw_rect(point_bar, size_bar, Style::outlined(theme.primary, 1));
         }
 
         point.y += box_height + 4;

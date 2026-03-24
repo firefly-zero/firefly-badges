@@ -65,6 +65,9 @@ pub fn load_state() {
     } else if items.is_none() {
         log_error("app has no badges");
     }
+    if items.is_none() {
+        quit();
+    }
 
     let state = State {
         font,
