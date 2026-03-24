@@ -67,6 +67,13 @@ fn draw_items(state: &State) {
         let point_name = Point::new(point.x + 4, point.y + 7);
         draw_text(&item.name, &font, point_name, color);
 
+        {
+            let text_xp = alloc::format!("{}xp", item.xp);
+            let text_w = font.line_width_ascii(&text_xp) as i32;
+            let point_xp = Point::new(WIDTH - MARGIN - 4 - text_w, point_name.y);
+            draw_text(&text_xp, &font, point_xp, theme.secondary);
+        }
+
         point.y += box_height + 4;
     }
 }
