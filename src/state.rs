@@ -62,6 +62,13 @@ pub fn load_state() {
         Some((author_id, app_id)) => load_items(author_id, app_id),
         None => None,
     };
+
+    if target.is_none() {
+        log_error("failed to load target");
+    } else if items.is_none() {
+        log_error("app has no badges");
+    }
+
     let state = State {
         font,
         target,
@@ -77,7 +84,7 @@ pub fn load_state() {
 }
 
 fn load_items(author_id: &str, app_id: &str) -> Option<Vec<Item>> {
-    let badges_path = alloc::format!("data/{author_id}/{app_id}/_badges");
+    let badges_path = alloc::format!("roms/{author_id}/{app_id}/_badges");
     let raw = sudo::load_file_buf(&badges_path)?;
     let badges = firefly_types::Badges::decode(raw.as_bytes()).ok()?;
 

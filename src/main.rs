@@ -6,6 +6,7 @@ mod state;
 
 use crate::state::*;
 use firefly_rust::*;
+use firefly_ui::Input;
 
 #[unsafe(no_mangle)]
 extern "C" fn boot() {
@@ -14,13 +15,60 @@ extern "C" fn boot() {
 
 #[unsafe(no_mangle)]
 extern "C" fn update() {
-    // ...
+    let state = get_state();
+    state.input.update();
+    if state.input.get() == Input::Back {
+        quit();
+    }
 }
 
 #[unsafe(no_mangle)]
 extern "C" fn render() {
     let state = get_state();
     draw_bg_grid(state.settings.theme);
+    draw_items(state);
+}
+
+fn draw_items(state: &State) {
+    const MARGIN: i32 = 12;
+
+    let Some(items) = state.items.as_ref() else {
+        return;
+    };
+    let theme = state.settings.theme;
+    let font = state.font.as_font();
+    let box_width = WIDTH - MARGIN * 2;
+    let corner = Size::new(4, 4);
+    let mut point = Point::new(MARGIN, MARGIN);
+    for item in items {
+        let earned = item.done >= item.goal;
+        let visible = item.done >= item.hidden;
+        if !visible {
+            continue;
+        }
+        let color = if item.new {
+            theme.accent
+        } else if earned {
+            theme.primary
+        } else {
+            theme.secondary
+        };
+        let box_height = 12;
+        let size = Size::new(box_width, box_height);
+        let point_shadow = Point::new(point.x + 1, point.y + 1);
+        draw_rounded_rect(point_shadow, size, corner, Style::solid(color));
+        let style = Style {
+            fill_color: theme.bg,
+            stroke_color: color,
+            stroke_width: 1,
+        };
+        draw_rounded_rect(point, size, corner, style);
+
+        let point_name = Point::new(point.x + 4, point.y + 7);
+        draw_text(&item.name, &font, point_name, color);
+
+        point.y += box_height + 4;
+    }
 }
 
 fn draw_bg_grid(theme: Theme) {
@@ -34,27 +82,4 @@ fn draw_bg_grid(theme: Theme) {
     for y in (CELL_SIZE..HEIGHT).step_by(CELL_SIZE as _) {
         draw_line(Point::new(0, y), Point::new(WIDTH, y), style);
     }
-}
-
-fn draw_badge_box(theme: Theme, earned: bool) {
-    const MARGIN: i32 = 12;
-
-    let color = if earned { theme.accent } else { theme.primary };
-    let size = Size::new(WIDTH - MARGIN * 2, HEIGHT - MARGIN * 2);
-    draw_rounded_rect(
-        Point::new(MARGIN + 1, MARGIN + 1),
-        size,
-        Size::new(4, 4),
-        Style::solid(color),
-    );
-    draw_rounded_rect(
-        Point::new(MARGIN, MARGIN),
-        size,
-        Size::new(4, 4),
-        Style {
-            fill_color: theme.bg,
-            stroke_color: color,
-            stroke_width: 1,
-        },
-    );
 }
