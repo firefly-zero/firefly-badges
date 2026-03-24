@@ -1,11 +1,11 @@
 use crate::*;
 use alloc::{
     string::{String, ToString},
-    vec::{self, Vec},
+    vec::Vec,
 };
 use core::mem::MaybeUninit;
 use firefly_rust::*;
-use firefly_types::{Encode, Stats};
+use firefly_types::Encode;
 
 static mut STATE: MaybeUninit<State> = MaybeUninit::uninit();
 
@@ -15,17 +15,14 @@ pub struct Item {
     /// How much XP earning the badge brings to the player.
     pub xp: u8,
 
-    /// The number of steps required for the badge to be shown.
-    ///
-    /// If zero, the badge is always shown. If equal to the number of steps
-    /// required to earn the badge, the badge will be shown only when earned.
-    pub hidden: u16,
-
     /// Human-readable badge name.
     pub name: String,
 
     /// Human-readable badge description. Typically, a hint on how to earn it.
     pub descr: String,
+
+    /// If the badge should be shown in the list.
+    pub visible: bool,
 
     /// If true, the earning of the badge hasn't been shown to the player yet.
     pub new: bool,
@@ -96,24 +93,57 @@ fn load_items(author_id: &str, app_id: &str) -> Option<Vec<Item>> {
         return None;
     }
     let mut items = Vec::new();
-    for (badge, progess) in badges.badges.iter().zip(stats.badges) {
+    for (badge, progress) in badges.badges.iter().zip(stats.badges) {
         let item = Item {
             position: badge.position,
             xp: badge.xp,
-            hidden: badge.hidden,
             name: badge.name.to_string(),
             descr: badge.descr.to_string(),
 
-            new: progess.new,
-            done: progess.done,
-            goal: progess.goal,
+            visible: progress.done >= badge.hidden,
+            new: progress.new,
+            done: progress.done,
+            goal: progress.goal,
         };
         items.push(item);
     }
     if items.is_empty() {
         return None;
     }
+    sort_items(&mut items);
     Some(items)
+}
+
+fn sort_items(items: &mut [Item]) {
+    let len = items.len();
+    if len <= 1 {
+        return;
+    }
+    let mut sorted = false;
+    while !sorted {
+        sorted = true;
+        for i in 0..len - 1 {
+            if !items_lt(&items[i], &items[i + 1]) {
+                items.swap(i, i + 1);
+                sorted = false;
+            }
+        }
+    }
+}
+
+/// Compare two items.
+///
+/// First we put newly earned badges, then old earned badges, then the rest.
+/// In each group, we sort items based on the provided position.
+/// The sort is stable.
+fn items_lt(left: &Item, right: &Item) -> bool {
+    if left.new && !right.new {
+        return true;
+    }
+    if left.done >= left.goal && right.done < right.goal {
+        return true;
+    }
+    left.position < right.position
 }
 
 /// Read the ID of the app to be removed.

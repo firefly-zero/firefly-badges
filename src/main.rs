@@ -33,7 +33,7 @@ extern "C" fn update() {
                         state.cursor = old_cursor;
                         break;
                     };
-                    if item.done >= item.hidden {
+                    if item.visible {
                         break;
                     }
                     state.cursor += 1;
@@ -66,8 +66,7 @@ fn draw_items(state: &State) {
     for (i, item) in items.iter().enumerate() {
         let expanded = i == state.cursor;
         let earned = item.done >= item.goal;
-        let visible = item.done >= item.hidden;
-        if !visible {
+        if !item.visible {
             continue;
         }
 
