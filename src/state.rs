@@ -41,7 +41,7 @@ pub struct State {
     pub font: FileBuf,
     pub target: Option<(String, String)>,
     pub settings: Settings,
-    pub cursor: u8,
+    pub cursor: usize,
     pub input: firefly_ui::InputManager,
     pub items: Option<Vec<Item>>,
 }

@@ -17,8 +17,31 @@ extern "C" fn boot() {
 extern "C" fn update() {
     let state = get_state();
     state.input.update();
-    if state.input.get() == Input::Back {
-        quit();
+    match state.input.get() {
+        Input::Up => {
+            if state.cursor > 0 {
+                state.cursor -= 1;
+            }
+        }
+        Input::Left => state.cursor = 0,
+        Input::Down => {
+            if let Some(items) = &state.items {
+                let old_cursor = state.cursor;
+                state.cursor += 1;
+                loop {
+                    let Some(item) = items.get(state.cursor) else {
+                        state.cursor = old_cursor;
+                        break;
+                    };
+                    if item.done >= item.hidden {
+                        break;
+                    }
+                    state.cursor += 1;
+                }
+            }
+        }
+        Input::Back => quit(),
+        _ => {}
     }
 }
 
@@ -40,12 +63,14 @@ fn draw_items(state: &State) {
     let box_width = WIDTH - MARGIN * 2;
     let corner = Size::new(4, 4);
     let mut point = Point::new(MARGIN, MARGIN);
-    for item in items {
+    for (i, item) in items.iter().enumerate() {
+        let expanded = i == state.cursor;
         let earned = item.done >= item.goal;
         let visible = item.done >= item.hidden;
         if !visible {
             continue;
         }
+
         let color = if item.new {
             theme.accent
         } else if earned {
@@ -53,7 +78,12 @@ fn draw_items(state: &State) {
         } else {
             theme.secondary
         };
-        let box_height = 12;
+
+        let mut box_height = 12;
+        if expanded && !item.descr.is_empty() {
+            box_height += 10;
+        }
+
         let size = Size::new(box_width, box_height);
         let point_shadow = Point::new(point.x + 1, point.y + 1);
         draw_rounded_rect(point_shadow, size, corner, Style::solid(color));
@@ -72,6 +102,11 @@ fn draw_items(state: &State) {
             let text_w = font.line_width_ascii(&text_xp) as i32;
             let point_xp = Point::new(WIDTH - MARGIN - 4 - text_w, point_name.y);
             draw_text(&text_xp, &font, point_xp, theme.secondary);
+        }
+
+        if expanded && !item.descr.is_empty() {
+            let point_descr = Point::new(point_name.x, point_name.y + 10);
+            draw_text(&item.descr, &font, point_descr, theme.primary);
         }
 
         point.y += box_height + 4;
