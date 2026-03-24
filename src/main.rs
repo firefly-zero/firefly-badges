@@ -23,7 +23,6 @@ extern "C" fn update() {
                 state.cursor -= 1;
             }
         }
-        Input::Left => state.cursor = 0,
         Input::Down => {
             if let Some(items) = &state.items {
                 let old_cursor = state.cursor;
@@ -37,6 +36,16 @@ extern "C" fn update() {
                         break;
                     }
                     state.cursor += 1;
+                }
+            }
+        }
+        Input::Left => state.cursor = 0,
+        Input::Right => {
+            if let Some(items) = &state.items {
+                for (i, item) in items.iter().enumerate() {
+                    if item.visible {
+                        state.cursor = i;
+                    }
                 }
             }
         }
@@ -126,7 +135,7 @@ fn draw_items(state: &State) {
                 if earned {
                     progress = bar_width;
                 } else if progress >= bar_width {
-                    progress -= 2;
+                    progress = bar_width - 2;
                 }
                 if progress > 0 {
                     let size_bar = Size::new(progress, 8);
