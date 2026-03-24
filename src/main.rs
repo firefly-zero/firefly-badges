@@ -6,11 +6,61 @@ mod state;
 
 use crate::state::*;
 use firefly_rust::*;
+use firefly_types::Encode;
 use firefly_ui::Input;
 
 #[unsafe(no_mangle)]
 extern "C" fn boot() {
     load_state();
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn before_exit() {
+    let state = get_state();
+    _ = update_settings(state);
+    _ = update_stats(state);
+}
+
+/// If there are new badges earned, add their XP to the total player XP in settings.
+fn update_settings(state: &State) -> Option<()> {
+    let items = state.items.as_ref()?;
+    let raw = sudo::load_file_buf("sys/settings")?;
+    let mut settings = firefly_types::Settings::decode(raw.as_bytes()).ok()?;
+    let mut dirty = false;
+    for item in items {
+        if item.new {
+            dirty = true;
+            settings.xp += u32::from(item.xp.min(200));
+        }
+    }
+    if dirty {
+        let raw = settings.encode_vec().ok()?;
+        sudo::dump_file("sys/settings", &raw);
+    }
+    Some(())
+}
+
+/// Mark newly earned badges as viewed and add their XP to the total XP earned in the app.
+fn update_stats(state: &State) -> Option<()> {
+    let items = state.items.as_ref()?;
+    let (author_id, app_id) = state.target.as_ref()?;
+    let stats_path = alloc::format!("data/{author_id}/{app_id}/stats");
+    let raw = sudo::load_file_buf(&stats_path)?;
+    let mut stats = firefly_types::Stats::decode(raw.as_bytes()).ok()?;
+    let mut dirty = false;
+    for (badge, item) in stats.badges.iter_mut().zip(items) {
+        if badge.new {
+            dirty = true;
+        }
+        badge.new = false;
+        let new_xp = stats.xp + u16::from(item.xp.min(200));
+        stats.xp = new_xp.min(1000);
+    }
+    if dirty {
+        let raw = stats.encode_vec().ok()?;
+        sudo::dump_file(&stats_path, &raw);
+    }
+    Some(())
 }
 
 #[unsafe(no_mangle)]
@@ -109,7 +159,7 @@ fn draw_items(state: &State) {
 
         // Name.
         let mut point_text = Point::new(point.x + 4, point.y + 7);
-        draw_text(&item.name, &font, point_text, color);
+        draw_text(&item.name, &font, point_text, theme.accent);
 
         // XP.
         {
