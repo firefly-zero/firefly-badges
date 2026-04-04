@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "badges"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "firefly-rust",
  "firefly-types",
@@ -34,18 +34,18 @@ checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
 name = "firefly-rust"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2474c5bd54b8460a5200ccb3adeb254b092bc46e257ce038d28b925e82e9f66"
+checksum = "c99a781c0a6e84cdf93cc10c8633fb6d1b064a56ff145326aa1ec97796b696a4"
 dependencies = [
  "talc",
 ]
 
 [[package]]
 name = "firefly-types"
-version = "0.8.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e9d24df2e684ea2ac8338bd0a7131121d8c73e208523b8695b09646b76adc40"
+checksum = "beadb1cd88c1ffb7680b96aed9fbe6526700797687bd27d86c925c12a89f4b6a"
 dependencies = [
  "postcard",
  "serde",
