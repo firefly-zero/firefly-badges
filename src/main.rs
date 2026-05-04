@@ -69,12 +69,11 @@ extern "C" fn update() {
     state.input.update();
     match state.input.get() {
         Input::Up => {
-            if state.cursor > 0 {
-                state.cursor -= 1;
-            }
+            state.cursor = state.cursor.saturating_sub(1);
         }
         Input::Down => {
             if let Some(items) = &state.items {
+                // Move cursor to the next visible item.
                 let old_cursor = state.cursor;
                 state.cursor += 1;
                 loop {
@@ -92,6 +91,7 @@ extern "C" fn update() {
         Input::Left => state.cursor = 0,
         Input::Right => {
             if let Some(items) = &state.items {
+                // Move cursor to the last visible item.
                 for (i, item) in items.iter().enumerate() {
                     if item.visible {
                         state.cursor = i;

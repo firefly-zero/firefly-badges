@@ -6,4 +6,5 @@ lang = "rust"
 sudo = true
 
 [files]
+_splash = { path = "splash.png" }
 ascii = { path = "ascii.fff", url = "https://fonts.fireflyzero.com/fonts/ascii/eg_6x9.fff", sha256 = "b07e868a74a070efcf4ca65d18839da883d1e273b646d8c54261fadec638c77" }
