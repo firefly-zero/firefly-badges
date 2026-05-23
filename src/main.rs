@@ -6,6 +6,7 @@ mod state;
 
 use crate::state::*;
 use firefly_rust::*;
+use firefly_sudo::sudo;
 use firefly_types::Encode;
 use firefly_ui::Input;
 
@@ -25,7 +26,8 @@ extern "C" fn before_exit() {
 fn update_settings(state: &State) -> Option<()> {
     let items = state.items.as_ref()?;
     let raw = sudo::load_file_buf("sys/settings")?;
-    let mut settings = firefly_types::Settings::decode(raw.as_bytes()).ok()?;
+    let raw = raw.into_bytes();
+    let mut settings = firefly_types::Settings::decode(&raw).ok()?;
     let mut dirty = false;
     for item in items {
         if item.new {
@@ -46,7 +48,8 @@ fn update_stats(state: &State) -> Option<()> {
     let (author_id, app_id) = state.target.as_ref()?;
     let stats_path = alloc::format!("data/{author_id}/{app_id}/stats");
     let raw = sudo::load_file_buf(&stats_path)?;
-    let mut stats = firefly_types::Stats::decode(raw.as_bytes()).ok()?;
+    let raw = raw.into_bytes();
+    let mut stats = firefly_types::Stats::decode(&raw).ok()?;
     let mut dirty = false;
     for (badge, item) in stats.badges.iter_mut().zip(items) {
         if badge.new {
@@ -118,7 +121,7 @@ fn draw_items(state: &State) {
         return;
     };
     let theme = state.settings.theme;
-    let font = state.font.as_font();
+    let font = &state.font;
     let box_width = WIDTH - MARGIN * 2;
     let corner = Size::new(4, 4);
     let mut point = Point::new(MARGIN, MARGIN);
@@ -159,20 +162,20 @@ fn draw_items(state: &State) {
 
         // Name.
         let mut point_text = Point::new(point.x + 4, point.y + 7);
-        draw_text(&item.name, &font, point_text, theme.accent);
+        draw_text(&item.name, font, point_text, theme.accent);
 
         // XP.
         {
             let text_xp = alloc::format!("{}xp", item.xp);
             let text_w = font.line_width_ascii(&text_xp) as i32;
             let point_xp = Point::new(WIDTH - MARGIN - 4 - text_w, point_text.y);
-            draw_text(&text_xp, &font, point_xp, theme.secondary);
+            draw_text(&text_xp, font, point_xp, theme.secondary);
         }
 
         // Description.
         if expanded && !item.descr.is_empty() {
             point_text.y += 10;
-            draw_text(&item.descr, &font, point_text, theme.primary);
+            draw_text(&item.descr, font, point_text, theme.primary);
         }
 
         // Progress bar.

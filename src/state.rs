@@ -35,7 +35,7 @@ pub struct Item {
 }
 
 pub struct State {
-    pub font: FileBuf,
+    pub font: FontBuf,
     pub target: Option<(String, String)>,
     pub settings: Settings,
     pub cursor: usize,
@@ -70,7 +70,7 @@ pub fn load_state() {
     }
 
     let state = State {
-        font,
+        font: font.into(),
         target,
         settings,
         cursor: 0,
@@ -86,11 +86,13 @@ pub fn load_state() {
 fn load_items(author_id: &str, app_id: &str) -> Option<Vec<Item>> {
     let badges_path = alloc::format!("roms/{author_id}/{app_id}/_badges");
     let raw = sudo::load_file_buf(&badges_path)?;
-    let badges = firefly_types::Badges::decode(raw.as_bytes()).ok()?;
+    let raw = raw.into_bytes();
+    let badges = firefly_types::Badges::decode(&raw).ok()?;
 
     let stats_path = alloc::format!("data/{author_id}/{app_id}/stats");
     let raw = sudo::load_file_buf(&stats_path)?;
-    let stats = firefly_types::Stats::decode(raw.as_bytes()).ok()?;
+    let raw = raw.into_bytes();
+    let stats = firefly_types::Stats::decode(&raw).ok()?;
 
     if badges.badges.len() != stats.badges.len() {
         return None;
@@ -152,7 +154,7 @@ fn items_lt(left: &Item, right: &Item) -> bool {
 /// Read the ID of the app to be removed.
 fn load_target() -> Option<(String, String)> {
     let raw = load_file_buf("target")?;
-    let raw = raw.as_bytes();
+    let raw = raw.into_bytes();
     let raw = raw.trim_ascii();
     let raw = alloc::str::from_utf8(raw).ok()?;
     let (author, app) = split_by(raw, '.')?;
